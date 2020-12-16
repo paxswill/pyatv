@@ -129,24 +129,25 @@ def tcp_keepalive(sock) -> None:
 
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
-    # Look up options depending on operating system
-    optnames = {
-        # https://github.com/apple/darwin-xnu/blob/0a798f6738bc1db01281fc08ae024145e84df927/bsd/netinet/tcp.h#L206  # noqa
-        "Darwin": (0x10, 0x101, 0x102),
-        "Linux": ("TCP_KEEPIDLE", "TCP_KEEPINTVL", "TCP_KEEPCNT"),
-        "Windows": ("TCP_KEEPIDLE", "TCP_KEEPINTVL", "TCP_KEEPCNT"),
-    }.get(current_platform, None)
-
-    if optnames is None:
-        raise exceptions.NotSupportedError(
-            f"{current_platform} does not support keep-alive"
-        )
-
     # Default values are 1s idle time, 5s interval and 4 fails
-    idle, intvl, cnt = optnames
-    _setopt(idle, 1)
-    _setopt(intvl, 5)
-    _setopt(cnt, 4)
+    idle_time = 1
+    interval = 5
+    try_count = 4
+
+    # Darwin uses TCP_KEEPALIVE instead of TCP_KEEPIDLE, and TCP_KEEPALIVE is not (yet)
+    # available in Python (https://bugs.python.org/issue34932).
+    if current_platform == "Darwin":
+        # https://github.com/apple/darwin-xnu/blob/0a798f6738bc1db01281fc08ae024145e84df927/bsd/netinet/tcp.h#L206  # noqa
+        # TCP_KEEPALIVE
+        _setopt(0x10, idle_time)
+        # TCP_KEEPINTVL
+        _setopt(0x101, interval)
+        # TCP_KEEPCNT
+        _setopt(0x102, try_count)
+    else:
+        _setopt("TCP_KEEPIDLE", idle_time)
+        _setopt("TCP_KEEPINTVL", interval)
+        _setopt("TCP_KEEPCNT", try_count)
 
     _LOGGER.debug("Configured keep-alive on %s (%s)", sock, current_platform)
 
