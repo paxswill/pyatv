@@ -441,7 +441,7 @@ class ReceiveDelegate(asyncio.Protocol):
         if delegate is not None:
             try:
                 delegate.datagram_received(data, addr)
-            except Exception:  # pylint: disable=no-bare
+            except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("exception during data handling")
 
     def error_received(self, exc) -> None:
@@ -450,7 +450,7 @@ class ReceiveDelegate(asyncio.Protocol):
         if delegate is not None:
             try:
                 delegate.error_received(exc)
-            except Exception:  # pylint: disable=no-bare
+            except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("connection error")
 
     def __str__(self):
@@ -531,7 +531,7 @@ class MulticastDnsSdClientProtocol:
         for receiver in self._receivers:
             try:
                 receiver.sendto(message, target)
-            except Exception:  # pylint: disable=bare-except
+            except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("fail to send to %r", receiver)
 
     def datagram_received(self, data, addr) -> None:
@@ -632,7 +632,7 @@ async def multicast(
     for addr in net.get_private_addresses():
         try:
             await protocol.add_socket(net.mcast_socket(str(addr)))
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             _LOGGER.exception(f"failed to add listener for {addr}")
 
     return await typing.cast(MulticastDnsSdClientProtocol, protocol).get_response(
