@@ -171,6 +171,7 @@ class UnicastDnsSdClientProtocol(asyncio.Protocol):
         )
 
         self.result = DnsMessage().unpack(data)
+        _LOGGER.debug("Parsed DNS message: %s", self.result)
         self._finished()
         if self.transport:
             self.transport.close()
@@ -325,7 +326,9 @@ class MulticastDnsSdClientProtocol:
 
         # Suppress decode errors for now (but still log)
         try:
-            services = parse_services(DnsMessage().unpack(data))
+            message = DnsMessage().unpack(data)
+            _LOGGER.debug("Parsed DNS message: %s", message)
+            services = parse_services(message.unpack(data))
         except UnicodeDecodeError:
             log_binary(_LOGGER, "Failed to decode message", Msg=data)
             return
