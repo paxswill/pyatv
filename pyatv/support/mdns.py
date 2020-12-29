@@ -14,12 +14,8 @@ from pyatv.support.collections import CaseInsensitiveDict
 from pyatv.support.dns import DnsMessage, DnsQuestion, DnsResource, QueryType
 
 _LOGGER = logging.getLogger(__name__)
-
-# This module produces a lot of debug output, use a dedicated log level.
-# Maybe move this to top-level support later?
-TRAFFIC_LEVEL = logging.DEBUG - 5
-setattr(logging, "TRAFFIC", TRAFFIC_LEVEL)
-logging.addLevelName(TRAFFIC_LEVEL, "Traffic")
+_TRAFFIC_LOGGER = _LOGGER.getChild("traffic")
+_TRAFFIC_LOGGER.setLevel(logging.INFO)
 
 
 class Service(typing.NamedTuple):
@@ -158,9 +154,8 @@ class UnicastDnsSdClientProtocol(asyncio.Protocol):
     async def _resend_loop(self):
         for _ in range(math.ceil(self.timeout)):
             log_binary(
-                _LOGGER,
+                _TRAFFIC_LOGGER,
                 "Sending DNS request to " + self.host,
-                level=TRAFFIC_LEVEL,
                 Data=self.message,
             )
 
@@ -170,9 +165,8 @@ class UnicastDnsSdClientProtocol(asyncio.Protocol):
     def datagram_received(self, data: bytes, _) -> None:
         """DNS response packet received."""
         log_binary(
-            _LOGGER,
+            _TRAFFIC_LOGGER,
             "Received DNS response from " + self.host,
-            level=TRAFFIC_LEVEL,
             Data=data,
         )
 
@@ -296,9 +290,8 @@ class MulticastDnsSdClientProtocol:
     async def _resend_loop(self, timeout):
         for _ in range(math.ceil(timeout)):
             log_binary(
-                _LOGGER,
+                _TRAFFIC_LOGGER,
                 f"Sending multicast DNS request to {self.address}:{self.port}",
-                level=TRAFFIC_LEVEL,
                 Data=self.message,
             )
 
@@ -307,9 +300,8 @@ class MulticastDnsSdClientProtocol:
             # Send unicast requests if devices are sleeping
             for address, message in self._unicasts.items():
                 log_binary(
-                    _LOGGER,
+                    _TRAFFIC_LOGGER,
                     f"Sending unicast DNS request to {address}:{self.port}",
-                    level=TRAFFIC_LEVEL,
                     Data=message,
                 )
                 self._sendto(message, (address, self.port))
@@ -326,9 +318,8 @@ class MulticastDnsSdClientProtocol:
     def datagram_received(self, data, addr) -> None:
         """DNS response packet received."""
         log_binary(
-            _LOGGER,
+            _TRAFFIC_LOGGER,
             f"Received DNS response from {addr}",
-            level=TRAFFIC_LEVEL,
             Data=data,
         )
 
