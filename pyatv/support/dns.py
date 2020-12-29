@@ -5,6 +5,7 @@ import logging
 import struct
 import typing
 import ipaddress
+import pprint
 
 from pyatv.support.collections import CaseInsensitiveDict
 
@@ -352,13 +353,18 @@ class DnsMessage:
     def __str__(self):
         """Return string representation of DnsMessage."""
         return (
-            "MsgId=0x{0:04X}\nFlags=0x{1:04X}\nQuestions={2}\n"
+            "MsgId={0:#04X}\nFlags={1:#04X}\nQuestions={2}\n"
             "Answers={3}\nAuthorities={4}\nResources={5}".format(
                 self.msg_id,
                 self.flags,
-                self.questions,
-                self.answers,
-                self.authorities,
-                self.resources,
+                *[
+                    pprint.pformat(arr, indent=2)
+                    for arr in (
+                        self.questions,
+                        self.answers,
+                        self.authorities,
+                        self.resources,
+                    )
+                ],
             )
         )
