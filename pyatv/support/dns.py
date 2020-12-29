@@ -4,7 +4,7 @@ import io
 import logging
 import struct
 import typing
-from ipaddress import IPv4Address
+import ipaddress
 
 from pyatv.support.collections import CaseInsensitiveDict
 
@@ -156,6 +156,7 @@ class QueryType(enum.IntEnum):
     PTR = 0x0C
     TXT = 0x10
     SRV = 0x21
+    AAAA = 0x1C
     ANY = 0xFF
 
     def parse_rdata(self, buffer: typing.BinaryIO, length: int) -> typing.Any:
@@ -168,7 +169,13 @@ class QueryType(enum.IntEnum):
                 raise ValueError(
                     f"An A record must have exactly 4 bytes of data (not {length})"
                 )
-            return str(IPv4Address(buffer.read(length)))
+            return str(ipaddress.IPv4Address(buffer.read(length)))
+        elif self is self.AAAA:
+            if length != 16:
+                raise ValueError(
+                    f"An AAAA record must have exactly 16 bytes of data (not {length})"
+                )
+            return str(ipaddress.IPv6Address(buffer.read(length)))
         elif self is self.PTR:
             return parse_domain_name(buffer)
         elif self is self.TXT:
