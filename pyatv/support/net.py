@@ -66,15 +66,25 @@ def mcast_socket(address: Optional[str], port: int = 0) -> socket.socket:
     if hasattr(socket, "SO_REUSEPORT"):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
+    # We must join the multicast group before snooping switches will pass packets to us,
+    # and OSs can also skip passing packets to us as well (ex: FreeBSD is a bit stricter
+    # on passing packets to sockets without joining).
+    membership_request: bytes
+    mdns_addr = socket.inet_aton("224.0.0.251")
     if address is not None:
-        sock.setsockopt(
-            socket.SOL_IP, socket.IP_MULTICAST_IF, socket.inet_aton(address)
+        interface_addr = socket.inet_aton(address)
+        sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF, interface_addr)
+        membership_request = mdns_addr + interface_addr
+    else:
+        # INADDR_ANY is an integer, so we get to use struct to combine it and the
+        # multicast group address.
+        membership_request = struct.pack("4sL", mdns_addr, socket.INADDR_ANY)
+    try:
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership_request)
+    except OSError:
+        _LOGGER.exception(
+            "Failed to join multicast group with address %s", address or "(default)"
         )
-        try:
-            membership = socket.inet_aton("224.0.0.251") + socket.inet_aton(address)
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership)
-        except OSError:
-            _LOGGER.exception("failed to join")
 
     _LOGGER.debug("Binding on %s:%d", address or "*", port)
     sock.bind((address or "", port))
