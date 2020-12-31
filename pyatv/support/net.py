@@ -85,6 +85,7 @@ def mcast_socket(address: Optional[str], port: int = 0) -> socket.socket:
         _LOGGER.exception(
             "Failed to join multicast group with address %s", address or "(default)"
         )
+        raise
 
     _LOGGER.debug("Binding on %s:%d", address or "*", port)
     sock.bind((address or "", port))
