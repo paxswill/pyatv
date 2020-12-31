@@ -1,7 +1,8 @@
 """Unit tests for the net support module."""
 
+import typing
 from typing import Dict, List
-from ipaddress import IPv4Address, ip_address
+import ipaddress
 import platform
 import socket
 import sys
@@ -35,9 +36,9 @@ def skip_before_win_build(build_number: int):
 
 @pytest.fixture(autouse=True)
 def mock_address():
-    addresses: Dict[str, List[str]] = {}
+    addresses: typing.MutableMapping[str, typing.MutableSequence[str]] = {}
 
-    def _add(interface: str, address: IPv4Address):
+    def _add(interface: str, address: ipaddress.IPv4Address):
         addresses.setdefault(interface, []).append(address)
 
     def _ifaddresses(interface: str):
@@ -85,9 +86,9 @@ def test_private_addresses(mock_address):
     mock_address("eth1", "172.16.0.1")
 
     assert get_private_addresses() == [
-        ip_address("10.0.0.1"),
-        ip_address("192.168.0.1"),
-        ip_address("172.16.0.1"),
+        ipaddress.ip_address("10.0.0.1"),
+        ipaddress.ip_address("192.168.0.1"),
+        ipaddress.ip_address("172.16.0.1"),
     ]
 
 
@@ -99,7 +100,7 @@ def test_public_addresses(mock_address):
 
 def test_localhost(mock_address):
     mock_address("eth0", "127.0.0.1")
-    assert get_private_addresses() == [IPv4Address("127.0.0.1")]
+    assert get_private_addresses() == [ipaddress.IPv4Address("127.0.0.1")]
 
 
 # Windows 10 1709 (build 16299) is the first version with TCP_KEEPIDLE
